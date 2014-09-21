@@ -1,10 +1,10 @@
 (function() {
   var MdSystem = function() {
     this.DEFAULT_BODY_SIZE = 10;
-    this.num_atoms = 200;
+    this.num_atoms = 100;
     this.ATOM_TYPES = 
     {
-        OXYGEN: {radius: 10, color: 'red', mass: 1, C6: 0.126, C12: 0.0008}
+        OXYGEN: {radius: 12, color: 'red', mass: 1, C6: 0.126, C12: 0.0008}
     };
 
     this.bodies = [];
@@ -89,6 +89,12 @@
     },
 
     collision: function(body){
+      Rij = this.center.sub(body.center);
+      distance = Rij.norm();
+      minDistance = (this.radius + body.radius);
+      if ( distance <  minDistance) {
+        this.center = body.center.add( Rij.multiply( minDistance/distance ));
+      }
       newvelocity = new Vector(body.velocity.x, body.velocity.y);
       body.velocity = new Vector(this.velocity.x, this.velocity.y);
       this.velocity = newvelocity;
@@ -142,8 +148,7 @@
 
   var isColliding = function(b1, b2){
     distance = getDistance(b1.center, b2.center);
-    return ( distance < b1.radius + b2.radius + 0.1  && 
-            b1.velocity.dot( b2.center.sub(b1.center)) > 0 );
+    return ( distance < b1.radius + b2.radius + 0.1);
   }
 
   var getDistance = function(v1, v2){
