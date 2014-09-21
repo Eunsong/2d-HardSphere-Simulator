@@ -4,7 +4,8 @@
     this.num_atoms = 100;
     this.ATOM_TYPES = 
     {
-        OXYGEN: {radius: 12, color: 'red', mass: 1, C6: 0.126, C12: 0.0008}
+        OXYGEN: {radius: 12, color: 'red', mass: 2, C6: 0.126, C12: 0.0008},
+        HYDROGEN: {radius: 8, color: 'blue', mass: 1, C6: 0.0, C12: 0.0}
     };
 
     this.bodies = [];
@@ -13,8 +14,16 @@
     this.box = {x: screen.canvas.width, y: screen.canvas.height};
     while ( this.bodies.length < this.num_atoms){
       center = genRandPosition(this);
-      vel = genRandVelocity(3.0);
+      vel = genRandVelocity(2.0);
       body = new Atom(this.ATOM_TYPES.OXYGEN, center, vel );
+      if ( !this.checkOverlap(body)){
+        this.bodies.push(body);
+      }
+    }
+    while ( this.bodies.length < 2*this.num_atoms){
+      center = genRandPosition(this);
+      vel = genRandVelocity(3.0);
+      body = new Atom(this.ATOM_TYPES.HYDROGEN, center, vel );
       if ( !this.checkOverlap(body)){
         this.bodies.push(body);
       }
@@ -74,6 +83,7 @@
   }
 
   var Atom = function(atomtype, center, v0){
+    this.atomtype = atomtype;
     this.mass = atomtype.mass;
     this.C6 = atomtype.C6;
     this.C12 = atomtype.C12;
@@ -96,8 +106,9 @@
         this.center = body.center.add( Rij.multiply( minDistance/distance ));
       }
       newvelocity = new Vector(body.velocity.x, body.velocity.y);
-      body.velocity = new Vector(this.velocity.x, this.velocity.y);
-      this.velocity = newvelocity;
+      body.velocity = (new Vector(this.velocity.x, this.velocity.y)).
+                      multiply(this.mass/body.mass);
+      this.velocity = newvelocity.multiply(body.mass/this.mass);
     },
 
     draw: function(screen){
@@ -167,7 +178,7 @@
   var drawCircle = function(screen, body){
     screen.beginPath();
     screen.arc(body.center.x, body.center.y, body.radius, 0, 2*Math.PI);
-    screen.fillStyle = 'red';
+    screen.fillStyle = body.atomtype.color;
     screen.fill();
     screen.strokeStyle = 'black';
     screen.stroke();
