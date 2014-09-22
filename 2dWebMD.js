@@ -2,19 +2,20 @@
   var MdSystem = function() {
     this.DEFAULT_BODY_SIZE = 10;
     this.num_atoms = 100;
+    this.HASH_TABLE_SIZE = 16;
     this.ATOM_TYPES = 
     {
-        OXYGEN: {radius: 12, color: 'red', mass: 2, C6: 0.126, C12: 0.0008},
-        HYDROGEN: {radius: 8, color: 'blue', mass: 1, C6: 0.0, C12: 0.0}
+        OXYGEN: {radius: 15, color: 'red', mass: 2, C6: 0.126, C12: 0.0008},
+        HYDROGEN: {radius: 12, color: 'blue', mass: 1, C6: 0.0, C12: 0.0}
     };
-
+    this.partition = [];
     this.bodies = [];
     this.unit = 1;
     var screen = document.getElementById("screen").getContext('2d');
     this.box = {x: screen.canvas.width, y: screen.canvas.height};
     while ( this.bodies.length < this.num_atoms){
       center = genRandPosition(this);
-      vel = genRandVelocity(2.0);
+      vel = genRandVelocity(1.0);
       body = new Atom(this.ATOM_TYPES.OXYGEN, center, vel );
       if ( !this.checkOverlap(body)){
         this.bodies.push(body);
@@ -22,7 +23,7 @@
     }
     while ( this.bodies.length < 2*this.num_atoms){
       center = genRandPosition(this);
-      vel = genRandVelocity(3.0);
+      vel = genRandVelocity(2.0);
       body = new Atom(this.ATOM_TYPES.HYDROGEN, center, vel );
       if ( !this.checkOverlap(body)){
         this.bodies.push(body);
@@ -32,6 +33,7 @@
     //this.bodies.push(body);
     var self = this;
     var tick = function() {
+      self.updatePartition();
       self.update();
       self.applyPBC();
       self.draw(screen);
@@ -61,7 +63,7 @@
       for ( var i = 0; i < this.bodies.length; i++){
         this.bodies[i].update();
       }
-      reportCollisions(this.bodies);
+      reportCollisions(this);
     },
 
     applyPBC: function(){
@@ -78,9 +80,33 @@
           this.bodies[i].draw(screen);
         }
       }
+    },
+
+    updatePartition: function(){
+      this.partition = [];
+      for ( var i = 0; i < this.HASH_TABLE_SIZE; i++){
+        row = [];
+        for ( var j = 0; j < this.HASH_TABLE_SIZE; j++){
+          col = [];
+          row.push(col);
+        }
+        this.partition.push(row);
+      }
+      for ( var i = 0; i < this.bodies.length; i++){
+        row = hash(this.box.y, this.HASH_TABLE_SIZE, this.bodies[i].center.y);
+        col = hash(this.box.x, this.HASH_TABLE_SIZE, this.bodies[i].center.x);
+        this.partition[row][col].push(this.bodies[i]);
+      }
     }
 
   }
+
+  var hash = function(box_length, num_grid, position){
+    dGrid = box_length/num_grid;
+    index = parseInt( position/dGrid, 10 );
+    return index;
+  }
+
 
   var Atom = function(atomtype, center, v0){
     this.atomtype = atomtype;
@@ -159,7 +185,7 @@
 
   var isColliding = function(b1, b2){
     distance = getDistance(b1.center, b2.center);
-    return ( distance < b1.radius + b2.radius + 0.1);
+    return ( b1 != b2 && distance < b1.radius + b2.radius + 0.1);
   }
 
   var getDistance = function(v1, v2){
@@ -184,8 +210,28 @@
     screen.stroke();
   }
 
-  var reportCollisions = function(bodies) {
+  var reportCollisions = function(mdsystem) {
     var bodyPairs = [];
+    var bodies = mdsystem.bodies;
+    var hashsize = mdsystem.HASH_TABLE_SIZE;
+    var partition = mdsystem.partition;
+    for ( var i = 0; i < bodies.length; i++){
+      row = hash(mdsystem.box.y, hashsize, bodies[i].center.y);
+      col = hash(mdsystem.box.x, hashsize, bodies[i].center.x);
+      for ( var q = -1; q < 2; q++){
+        for ( var z = -1; z < 2; z++){
+          rowIndex = (row+q+hashsize)%hashsize;
+          colIndex = (col+z+hashsize)%hashsize;
+          for ( var w = 0; w < partition[rowIndex][colIndex].length; w++){
+            bodyj = partition[rowIndex][colIndex][w];
+            if ( isColliding(bodies[i], bodyj) ){
+              bodyPairs.push([bodies[i], bodyj]);
+            }
+          }
+        }
+      }
+    }
+/*
     for ( var i = 0; i < bodies.length; i++){
       for (var j = i+1; j < bodies.length; j++) {
         if (isColliding(bodies[i], bodies[j])) {
@@ -194,7 +240,7 @@
         }
       }
     }
-
+*/
     for (var i = 0; i < bodyPairs.length; i++) {
       if (bodyPairs[i][0].collision !== undefined) {
         bodyPairs[i][0].collision(bodyPairs[i][1]);
