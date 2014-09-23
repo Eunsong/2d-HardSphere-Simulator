@@ -1,12 +1,13 @@
 (function() {
   var MdSystem = function() {
     this.DEFAULT_BODY_SIZE = 10;
-    this.num_atoms = 200;
+    this.num_atoms = 50;
     this.HASH_TABLE_SIZE = 16;
     this.ATOM_TYPES = 
     {
-        OXYGEN: {radius: 12, color: 'red', mass: 2, C6: 0.126, C12: 0.0008},
-        HYDROGEN: {radius: 8, color: 'blue', mass: 1, C6: 0.0, C12: 0.0}
+        OXYGEN: {radius: 15, color: 'red', mass: 2, C6: 0.126, C12: 0.0008},
+        HYDROGEN: {radius: 12, color: 'blue', mass: 1, C6: 0.0, C12: 0.0},
+        THERMON: {radius: 15, color: 'heat', mass: 1, C6: 0.0, C12: 0.0}
     };
     this.partition = [];
     this.bodies = [];
@@ -15,12 +16,14 @@
     this.box = {x: screen.canvas.width, y: screen.canvas.height};
     while ( this.bodies.length < this.num_atoms){
       center = genRandPosition(this);
-      vel = genRandVelocity(1.5);
-      body = new Atom(this.ATOM_TYPES.OXYGEN, center, vel );
+      vel = genRandVelocity(2.5);
+      body = new Atom(this.ATOM_TYPES.THERMON, center, vel );
+      //body = new Atom(this.ATOM_TYPES.OXYGEN, center, vel );
       if ( !this.checkOverlap(body)){
         this.bodies.push(body);
       }
     }
+    /*
     while ( this.bodies.length < 2*this.num_atoms){
       center = genRandPosition(this);
       vel = genRandVelocity(3.0);
@@ -28,7 +31,7 @@
       if ( !this.checkOverlap(body)){
         this.bodies.push(body);
       }
-    }
+    }*/
     //body = new Atom(this.ATOM_TYPES.OXYGEN, new Vector(100,100), new Vector(-2,0));
     //this.bodies.push(body);
     var self = this;
@@ -107,6 +110,9 @@
     return index;
   }
 
+  var configHeatDifusion = function(mdsystem){
+
+  }
 
   var Atom = function(atomtype, center, v0){
     this.atomtype = atomtype;
@@ -224,7 +230,22 @@
   var drawCircle = function(screen, body){
     screen.beginPath();
     screen.arc(body.center.x, body.center.y, body.radius, 0, 2*Math.PI);
-    screen.fillStyle = body.atomtype.color;
+    if ( body.atomtype.color != 'heat') {
+      screen.fillStyle = body.atomtype.color;
+    }
+    else{
+      var redCode = Math.floor(body.velocity.norm()/1.5 * 255);
+      if ( redCode > 255 ){
+        redCode = 255;
+      }
+      var blueCode = 0; //255 - redCode;
+      var redHexCode = redCode.toString(16);
+      var blueHexCode = blueCode.toString(16);
+      if (redHexCode.length == 1 ) redHexCode = "0" + redHexCode;
+      if (blueHexCode.length == 1 ) blueHexCode = "0" + blueHexCode;
+      screen.fillStyle = "#"+redHexCode + "00" + blueHexCode;
+    }
+    //screen.fillStyle = body.atomtype.color;
     screen.fill();
     screen.strokeStyle = 'black';
     screen.stroke();
