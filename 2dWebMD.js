@@ -1,12 +1,12 @@
 (function() {
   var MdSystem = function() {
     this.DEFAULT_BODY_SIZE = 10;
-    this.num_atoms = 100;
+    this.num_atoms = 200;
     this.HASH_TABLE_SIZE = 16;
     this.ATOM_TYPES = 
     {
-        OXYGEN: {radius: 15, color: 'red', mass: 2, C6: 0.126, C12: 0.0008},
-        HYDROGEN: {radius: 12, color: 'blue', mass: 1, C6: 0.0, C12: 0.0}
+        OXYGEN: {radius: 12, color: 'red', mass: 2, C6: 0.126, C12: 0.0008},
+        HYDROGEN: {radius: 8, color: 'blue', mass: 1, C6: 0.0, C12: 0.0}
     };
     this.partition = [];
     this.bodies = [];
@@ -15,7 +15,7 @@
     this.box = {x: screen.canvas.width, y: screen.canvas.height};
     while ( this.bodies.length < this.num_atoms){
       center = genRandPosition(this);
-      vel = genRandVelocity(1.0);
+      vel = genRandVelocity(1.5);
       body = new Atom(this.ATOM_TYPES.OXYGEN, center, vel );
       if ( !this.checkOverlap(body)){
         this.bodies.push(body);
@@ -23,7 +23,7 @@
     }
     while ( this.bodies.length < 2*this.num_atoms){
       center = genRandPosition(this);
-      vel = genRandVelocity(2.0);
+      vel = genRandVelocity(3.0);
       body = new Atom(this.ATOM_TYPES.HYDROGEN, center, vel );
       if ( !this.checkOverlap(body)){
         this.bodies.push(body);
@@ -125,16 +125,32 @@
     },
 
     collision: function(body){
-      Rij = this.center.sub(body.center);
-      distance = Rij.norm();
-      minDistance = (this.radius + body.radius);
+      var Rij = this.center.sub(body.center);
+      var distance = Rij.norm();
+      var minDistance = (this.radius + body.radius);
       if ( distance <  minDistance) {
         this.center = body.center.add( Rij.multiply( minDistance/distance ));
       }
-      newvelocity = new Vector(body.velocity.x, body.velocity.y);
-      body.velocity = (new Vector(this.velocity.x, this.velocity.y)).
-                      multiply(this.mass/body.mass);
-      this.velocity = newvelocity.multiply(body.mass/this.mass);
+
+      var mi = this.mass;
+      var mj = body.mass;
+      var vi_old = this.velocity;
+      var uij = Rij.normalize();
+      var tan = new Vector(-uij.y, uij.x); // tangential unit vector to the collision surface
+      var vi_tan = vi_old.dot(tan);
+      var vi_perp = Math.sqrt( vi_old.normsq() - vi_tan*vi_tan);
+
+      var vj_old = body.velocity;
+      var vj_tan = vj_old.dot(tan);
+      var vj_perp = Math.sqrt( vj_old.normsq() - vj_tan*vj_tan );
+
+      var vi_delta = (-vi_perp*(mi - mj) + 2*mj*vj_perp)/(mi + mj);
+      var vj_delta = (-vj_perp*(mj - mi) + 2*mi*vi_perp)/(mi + mj);
+
+      var vi_new = tan.multiply(vi_tan).add( uij.multiply(vi_delta));
+      var vj_new = tan.multiply(vj_tan).sub( uij.multiply(vj_delta));
+      body.velocity = vj_new;
+      this.velocity = vi_new;
     },
 
     draw: function(screen){
@@ -152,7 +168,7 @@
       return Math.sqrt(this.x*this.x + this.y*this.y);
     },
     normsq: function(){
-      return this.x*this.y + this.y*this.y;
+      return this.x*this.x + this.y*this.y;
     },
     sub: function(v){
       return new Vector(this.x - v.x, this.y - v.y);
@@ -165,6 +181,10 @@
     },
     dot: function(v){
       return (this.x*v.x + this.y*v.y);
+    },
+    normalize: function(){
+      denom = this.norm();
+      return this.multiply(1/denom);
     }
   }
 
