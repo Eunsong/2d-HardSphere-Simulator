@@ -1,28 +1,37 @@
 (function() {
   var MdSystem = function() {
+    this.atom_counts = 0;
     this.DEFAULT_BODY_SIZE = 10;
-    this.num_atoms = 50;
+    this.num_atoms = 450;
     this.HASH_TABLE_SIZE = 16;
     this.ATOM_TYPES = 
     {
         OXYGEN: {radius: 15, color: 'red', mass: 2, C6: 0.126, C12: 0.0008},
         HYDROGEN: {radius: 12, color: 'blue', mass: 1, C6: 0.0, C12: 0.0},
-        THERMON: {radius: 15, color: 'heat', mass: 1, C6: 0.0, C12: 0.0}
+        THERMON: {radius: 12, color: 'heat', mass: 1, C6: 0.0, C12: 0.0}
     };
     this.partition = [];
     this.bodies = [];
     this.unit = 1;
     var screen = document.getElementById("screen").getContext('2d');
     this.box = {x: screen.canvas.width, y: screen.canvas.height};
+    
     while ( this.bodies.length < this.num_atoms){
       center = genRandPosition(this);
-      vel = genRandVelocity(2.5);
-      body = new Atom(this.ATOM_TYPES.THERMON, center, vel );
+      vel = new Vector(0, 0);
+      //vel = genRandVelocity(0.0);
+      if ( this.atom_counts == this.num_atoms - 1){
+        vel = new Vector(3, 3);
+      }
+      var body = new Atom(this.ATOM_TYPES.THERMON, center, vel);
+      this.addAtom( body);
       //body = new Atom(this.ATOM_TYPES.OXYGEN, center, vel );
       if ( !this.checkOverlap(body)){
         this.bodies.push(body);
       }
     }
+    //this.addAtom(this.ATOM_TYPES.THERMON, new Vector(this.box.x/2 + 200, this.box.y/2), new Vector(0,0));
+    //this.addAtom(this.ATOM_TYPES.THERMON, new Vector(this.box.x/2, this.box.y/2), new Vector(4,0));
     /*
     while ( this.bodies.length < 2*this.num_atoms){
       center = genRandPosition(this);
@@ -100,6 +109,12 @@
         col = hash(this.box.x, this.HASH_TABLE_SIZE, this.bodies[i].center.x);
         this.partition[row][col].push(this.bodies[i]);
       }
+    },
+
+    addAtom: function(body){
+      body.setIndex(this.atom_counts);
+      this.bodies.push(body);
+      this.atom_counts++;
     }
 
   }
@@ -123,8 +138,13 @@
     this.center = new Vector(center.x, center.y);
     this.radius = atomtype.radius;
     this.velocity = new Vector(v0.x, v0.y);
+    this.index = -1; // uninitialized
   }
   Atom.prototype = {
+    setIndex: function(index){
+      this.index = index;
+    },
+
     update: function(){
       this.center.x += this.velocity.x;
       this.center.y += this.velocity.y;
@@ -195,13 +215,13 @@
   }
 
   var applyPBC = function(mdsystem, body){
-    if ( body.center.x > mdsystem.box.x ){
+    if ( body.center.x >= mdsystem.box.x ){
       body.center.x -= mdsystem.box.x;
     }
     else if ( body.center.x < 0 ){
       body.center.x += mdsystem.box.x;
     }
-    if ( body.center.y > mdsystem.box.y ){
+    if ( body.center.y >= mdsystem.box.y ){
       body.center.y -= mdsystem.box.y;
     }
     else if ( body.center.y < 0 ){
@@ -234,11 +254,11 @@
       screen.fillStyle = body.atomtype.color;
     }
     else{
-      var redCode = Math.floor(body.velocity.norm()/1.5 * 255);
+      var redCode = Math.floor(body.velocity.norm()/0.5 * 255);
       if ( redCode > 255 ){
         redCode = 255;
       }
-      var blueCode = 0; //255 - redCode;
+      var blueCode = 255 - redCode;
       var redHexCode = redCode.toString(16);
       var blueHexCode = blueCode.toString(16);
       if (redHexCode.length == 1 ) redHexCode = "0" + redHexCode;
@@ -265,7 +285,7 @@
           colIndex = (col+z+hashsize)%hashsize;
           for ( var w = 0; w < partition[rowIndex][colIndex].length; w++){
             bodyj = partition[rowIndex][colIndex][w];
-            if ( isColliding(bodies[i], bodyj) ){
+            if ( isColliding(bodies[i], bodyj) && bodies[i].index < bodyj.index){
               bodyPairs.push([bodies[i], bodyj]);
             }
           }
