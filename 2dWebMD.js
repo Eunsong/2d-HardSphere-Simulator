@@ -2,13 +2,13 @@
   var MdSystem = function() {
     this.atom_counts = 0;
     this.DEFAULT_BODY_SIZE = 10;
-    this.num_atoms = 450;
-    this.HASH_TABLE_SIZE = 16;
+    this.num_atoms = 1000;
+    this.HASH_TABLE_SIZE = 32;
     this.ATOM_TYPES = 
     {
         OXYGEN: {radius: 15, color: 'red', mass: 2, C6: 0.126, C12: 0.0008},
         HYDROGEN: {radius: 12, color: 'blue', mass: 1, C6: 0.0, C12: 0.0},
-        THERMON: {radius: 12, color: 'heat', mass: 1, C6: 0.0, C12: 0.0}
+        THERMON: {radius: 8, color: 'heat', mass: 1, C6: 0.0, C12: 0.0}
     };
     this.partition = [];
     this.bodies = [];
@@ -17,42 +17,39 @@
     this.box = {x: screen.canvas.width, y: screen.canvas.height};
     
     while ( this.bodies.length < this.num_atoms){
-      center = genRandPosition(this);
-      vel = new Vector(0, 0);
+      var center = genRandPosition(this);
+      var vel = new Vector(0, 0);
       //vel = genRandVelocity(0.0);
       if ( this.atom_counts == this.num_atoms - 1){
-        vel = new Vector(3, 3);
+        vel = new Vector(1, 1);
       }
       var body = new Atom(this.ATOM_TYPES.THERMON, center, vel);
-      this.addAtom( body);
-      //body = new Atom(this.ATOM_TYPES.OXYGEN, center, vel );
-      if ( !this.checkOverlap(body)){
-        this.bodies.push(body);
+      if ( !this.checkOverlap(body) ) {
+        this.addAtom( body);
       }
     }
-    //this.addAtom(this.ATOM_TYPES.THERMON, new Vector(this.box.x/2 + 200, this.box.y/2), new Vector(0,0));
-    //this.addAtom(this.ATOM_TYPES.THERMON, new Vector(this.box.x/2, this.box.y/2), new Vector(4,0));
-    /*
-    while ( this.bodies.length < 2*this.num_atoms){
-      center = genRandPosition(this);
-      vel = genRandVelocity(3.0);
-      body = new Atom(this.ATOM_TYPES.HYDROGEN, center, vel );
-      if ( !this.checkOverlap(body)){
-        this.bodies.push(body);
-      }
-    }*/
-    //body = new Atom(this.ATOM_TYPES.OXYGEN, new Vector(100,100), new Vector(-2,0));
-    //this.bodies.push(body);
+
+    // pre-print initial configuration
+    this.wallCollision();
+    this.draw(screen);
+
     var self = this;
     var tick = function() {
       self.updatePartition();
       self.update();
-      self.applyPBC();
+      self.topBottomHeatBathWall(0.2, 1.5);
+      //self.wallCollision();
+      //self.heatBathWall("top", 0);
+      //self.heatBathWall("bottom", 2.5);
+      //self.applyPBC();
       self.draw(screen);
       requestAnimationFrame(tick);
     };
 
-    tick();
+    document.getElementById("button").addEventListener('click', function() {
+      tick();
+    });
+    
   };
 
   MdSystem.prototype = {
@@ -68,6 +65,7 @@
     },
 
     getMinImage: function(R){
+        // need to implement this
         return R;
     },
 
@@ -82,6 +80,61 @@
       for ( var i = 0; i < this.bodies.length; i++){
         applyPBC(this, this.bodies[i]);        
       }
+    },
+
+    wallCollision: function(){
+      for ( var i = 0; i < this.bodies.length; i++){
+        if ( this.bodies[i].center.x <= this.bodies[i].radius){
+          this.bodies[i].center.x = this.bodies[i].radius;
+          this.bodies[i].velocity.x = -this.bodies[i].velocity.x;
+        }
+        else if ( this.bodies[i].center.x >= this.box.x - this.bodies[i].radius ){
+          this.bodies[i].center.x = this.box.x - this.bodies[i].radius;
+          this.bodies[i].velocity.x = -this.bodies[i].velocity.x;
+        }
+
+        if ( this.bodies[i].center.y <= this.bodies[i].radius ){
+          this.bodies[i].center.y = this.bodies[i].radius ;
+          this.bodies[i].velocity.y = -this.bodies[i].velocity.y;
+        }
+        else if ( this.bodies[i].center.y >= this.box.y - this.bodies[i].radius ){
+          this.bodies[i].center.y = this.box.y - this.bodies[i].radius;
+          this.bodies[i].velocity.y = -this.bodies[i].velocity.y;
+        }
+      }
+    },
+
+    topBottomHeatBathWall: function(top_vel, bottom_vel){
+      for ( var i = 0; i < this.bodies.length; i++){
+        if ( this.bodies[i].center.x <= this.bodies[i].radius){
+          this.bodies[i].center.x = this.bodies[i].radius;
+          this.bodies[i].velocity.x = -this.bodies[i].velocity.x;
+        }
+        else if ( this.bodies[i].center.x >= this.box.x - this.bodies[i].radius ){
+          this.bodies[i].center.x = this.box.x - this.bodies[i].radius;
+          this.bodies[i].velocity.x = -this.bodies[i].velocity.x;
+        }
+
+        if ( this.bodies[i].center.y <= this.bodies[i].radius ){
+          this.bodies[i].center.y = this.bodies[i].radius ;
+          this.bodies[i].velocity.y = -this.bodies[i].velocity.y;
+          var speed = this.bodies[i].velocity.norm();
+          if ( speed != 0 ){
+            var scaleFactor = top_vel/speed;
+            this.bodies[i].velocity = this.bodies[i].velocity.multiply(scaleFactor);
+          }
+        }
+        else if ( this.bodies[i].center.y >= this.box.y - this.bodies[i].radius ){
+          this.bodies[i].center.y = this.box.y - this.bodies[i].radius;
+          this.bodies[i].velocity.y = -this.bodies[i].velocity.y;
+          var speed = this.bodies[i].velocity.norm();
+          if ( speed != 0 ){
+            var scaleFactor = bottom_vel/speed;
+            this.bodies[i].velocity = this.bodies[i].velocity.multiply(scaleFactor);
+          }
+        }
+      }
+
     },
 
     draw: function(screen){
@@ -254,7 +307,7 @@
       screen.fillStyle = body.atomtype.color;
     }
     else{
-      var redCode = Math.floor(body.velocity.norm()/0.5 * 255);
+      var redCode = Math.floor(body.velocity.norm()/1.0 * 255);
       if ( redCode > 255 ){
         redCode = 255;
       }
@@ -265,7 +318,6 @@
       if (blueHexCode.length == 1 ) blueHexCode = "0" + blueHexCode;
       screen.fillStyle = "#"+redHexCode + "00" + blueHexCode;
     }
-    //screen.fillStyle = body.atomtype.color;
     screen.fill();
     screen.strokeStyle = 'black';
     screen.stroke();
@@ -292,16 +344,7 @@
         }
       }
     }
-/*
-    for ( var i = 0; i < bodies.length; i++){
-      for (var j = i+1; j < bodies.length; j++) {
-        if (isColliding(bodies[i], bodies[j])) {
-          //alert("Collision!");
-          bodyPairs.push([bodies[i], bodies[j]]);
-        }
-      }
-    }
-*/
+
     for (var i = 0; i < bodyPairs.length; i++) {
       if (bodyPairs[i][0].collision !== undefined) {
         bodyPairs[i][0].collision(bodyPairs[i][1]);
