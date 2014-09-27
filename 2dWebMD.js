@@ -2,6 +2,7 @@
 
   var MdSystem = function() {
     this.atom_counts = 0;
+    this.elasticity = 1.0;
     this.DEFAULT_BODY_SIZE = 10;
     this.HASH_TABLE_SIZE = 32;
     this.ATOM_TYPES = 
@@ -43,7 +44,7 @@
       var msg = document.getElementById("user-input").value;
       runUserCommand(msg);
       document.getElementById("user-input").value = '';
-      self.simpleWallCollision();
+      self.simpleWallCollision(self.elasticity);
       self.draw(screen);
     });
 
@@ -51,8 +52,8 @@
     var tick = function() {
       self.updatePartition();
       self.update();
-
-      self.wall();
+      //self.applyGravity(0.1);
+      self.wall(self.elasticity);
       //self.topBottomHeatBathWall(0.2, 1.5);
       //self.simpleWallCollision();
       //self.applyPBC();
@@ -78,6 +79,59 @@
         var value = subtokens[1].trim();
         dic[key] = value;
       }
+      if ( dic["add"] == "atom"){
+        var radius_ = 12;
+        var mass_ = 1;
+        var color_ = "red";
+        var speed = 0.0;
+        var vx = 0.0;
+        var vy = 0.0;
+        var vel;
+        var region = {topleft: {x: 0, y: 0}, 
+                      bottomright: {x: this.box.x, y: this.box.y}}
+        var center = genRandPosition(region);
+        if ( dic["radius"] != null){
+          radius_ = parseInt(dic["radius"]);
+        }
+        if ( dic["mass"] != null ){
+          mass_ = parseInt(dic["mass"]);
+        }
+        if ( dic["color"] != null ){
+          color_ = dic["color"];
+        }
+        if ( dic["speed"] != null){
+          speed = parseFloat(dic["speed"]);
+        }
+        if ( dic["vx"] != null){
+          vx = parseFloat(dic["vx"]);
+        }
+        if ( dic["vy"] != null){
+          vy = parseFloat(dic["vy"]);
+        }
+        if ( vx != 0 || vy != 0 ){
+          vel = new Vector(vx, vy);
+        }
+        else{
+          vel = genRandVelocity(speed);
+        }
+        if ( dic["x"] != null){
+          center.x = parseInt(dic["x"]);
+        }
+        if ( dic["y"] != null){
+          center.y = parseInt(dic["y"]);
+        }
+        var atomType = {radius: radius_, mass: mass_, color: color_};
+        var body = new Atom(atomType, center, vel);
+        while (true){
+          if ( !this.checkOverlap(body) ) {
+            this.addAtom(body);
+            break;
+          }
+          center = genRandPosition(region);
+          body = new Atom(atomType, center, vel);
+        }
+      }
+
       if ( dic["add"] == "atoms" ){
         var numAtoms = parseInt(dic["number"]);
         var radius = 12;
@@ -98,14 +152,31 @@
         }
         var region = {topleft: {x: 0, y: 0}, 
                       bottomright: {x: this.box.x, y: this.box.y}}
-
+        if ( dic["region"] != null){
+          if (dic["region"] == "upper half"){
+            region = {topleft: {x: 0, y: 0}, 
+                      bottomright: {x: this.box.x, y: this.box.y/2}}
+          }
+          else if ( dic["region"] == "bottom half"){
+            region = {topleft: {x: 0, y: this.box.y/2}, 
+                      bottomright: {x: this.box.x, y: this.box.y}}
+          }
+          else if ( dic["region"] == "left half" ){
+            region = {topleft: {x: 0, y: 0}, 
+                      bottomright: {x: this.box.x/2, y: this.box.y}}
+          }
+          else if ( dic["region"] == "right half"){
+            region = {topleft: {x: this.box.x/2, y: 0}, 
+                      bottomright: {x: this.box.x, y: this.box.y}}
+          }
+        }              
         this.addAtoms(radius, mass, color, speed, region, numAtoms );
       }
       else if ( dic["add"] == "heat bath" ){
         var topv = parseFloat(dic["topv"]);
         var bottomv = parseFloat(dic["bottomv"]);
-        this.wall = function(){
-          this.topBottomHeatBathWall(topv, bottomv);
+        this.wall = function(elasticity){
+          this.topBottomHeatBathWall(elasticity, topv, bottomv);
         }
       }
       else if ( dic["add"] == "pbc"){
@@ -158,37 +229,37 @@
 
 
 
-    simpleWallCollision: function(){
+    simpleWallCollision: function(elasticity){
       for ( var i = 0; i < this.bodies.length; i++){
         if ( this.bodies[i].center.x <= this.bodies[i].radius){
           this.bodies[i].center.x = this.bodies[i].radius;
-          this.bodies[i].velocity.x = -this.bodies[i].velocity.x;
+          this.bodies[i].velocity.x = -this.bodies[i].velocity.x*elasticity;
         }
         else if ( this.bodies[i].center.x >= this.box.x - this.bodies[i].radius ){
           this.bodies[i].center.x = this.box.x - this.bodies[i].radius;
-          this.bodies[i].velocity.x = -this.bodies[i].velocity.x;
+          this.bodies[i].velocity.x = -this.bodies[i].velocity.x*elasticity;
         }
 
         if ( this.bodies[i].center.y <= this.bodies[i].radius ){
           this.bodies[i].center.y = this.bodies[i].radius ;
-          this.bodies[i].velocity.y = -this.bodies[i].velocity.y;
+          this.bodies[i].velocity.y = -this.bodies[i].velocity.y*elasticity;
         }
         else if ( this.bodies[i].center.y >= this.box.y - this.bodies[i].radius ){
           this.bodies[i].center.y = this.box.y - this.bodies[i].radius;
-          this.bodies[i].velocity.y = -this.bodies[i].velocity.y;
+          this.bodies[i].velocity.y = -this.bodies[i].velocity.y*elasticity;
         }
       }
     },
 
-    topBottomHeatBathWall: function(top_vel, bottom_vel){
+    topBottomHeatBathWall: function(elasticity, top_vel, bottom_vel){
       for ( var i = 0; i < this.bodies.length; i++){
         if ( this.bodies[i].center.x <= this.bodies[i].radius){
           this.bodies[i].center.x = this.bodies[i].radius;
-          this.bodies[i].velocity.x = -this.bodies[i].velocity.x;
+          this.bodies[i].velocity.x = -this.bodies[i].velocity.x*elasticity;
         }
         else if ( this.bodies[i].center.x >= this.box.x - this.bodies[i].radius ){
           this.bodies[i].center.x = this.box.x - this.bodies[i].radius;
-          this.bodies[i].velocity.x = -this.bodies[i].velocity.x;
+          this.bodies[i].velocity.x = -this.bodies[i].velocity.x*elasticity;
         }
 
         if ( this.bodies[i].center.y <= this.bodies[i].radius ){
@@ -245,8 +316,13 @@
       body.setIndex(this.atom_counts);
       this.bodies.push(body);
       this.atom_counts++;
-    }
+    },
 
+    applyGravity: function(acc){
+      for ( var i = 0; i < this.bodies.length; i++){
+        this.bodies[i].velocity.y += acc;
+      }
+    }
   };
 
   var hash = function(box_length, num_grid, position){
@@ -276,7 +352,7 @@
       this.center.y += this.velocity.y;
     },
 
-    collision: function(body){
+    collision: function(elasticity, body){
       var Rij = this.center.sub(body.center);
       var distance = Rij.norm();
       var minDistance = (this.radius + body.radius);
@@ -296,8 +372,8 @@
       var vj_tan = vj_old.dot(tan);
       var vj_perp = Math.sqrt( vj_old.normsq() - vj_tan*vj_tan );
 
-      var vi_delta = (-vi_perp*(mi - mj) + 2*mj*vj_perp)/(mi + mj);
-      var vj_delta = (-vj_perp*(mj - mi) + 2*mi*vi_perp)/(mi + mj);
+      var vi_delta = ((-vi_perp*(mi - mj) + 2*mj*vj_perp)/(mi + mj))*elasticity;
+      var vj_delta = ((-vj_perp*(mj - mi) + 2*mi*vi_perp)/(mi + mj))*elasticity;
 
       var vi_new = tan.multiply(vi_tan).add( uij.multiply(vi_delta));
       var vj_new = tan.multiply(vj_tan).sub( uij.multiply(vj_delta));
@@ -396,7 +472,7 @@
       }
       var blueCode = 255 - redCode;
       */
-      rgbCode = rgb(0, 3, body.velocity.norm()); //redCode.toString(16);
+      rgbCode = rgb(0, 2, body.velocity.norm()); //redCode.toString(16);
       var redHexCode = rgbCode['r'].toString(16);
       var blueHexCode = rgbCode['b'].toString(16);
       var greenHexCode = rgbCode['g'].toString(16);
@@ -423,6 +499,7 @@
   };
 
   var reportCollisions = function(mdsystem) {
+    var elasticity = mdsystem.elasticity;
     var bodyPairs = [];
     var bodies = mdsystem.bodies;
     var hashsize = mdsystem.HASH_TABLE_SIZE;
@@ -446,7 +523,7 @@
 
     for (var i = 0; i < bodyPairs.length; i++) {
       if (bodyPairs[i][0].collision !== undefined) {
-        bodyPairs[i][0].collision(bodyPairs[i][1]);
+        bodyPairs[i][0].collision(elasticity, bodyPairs[i][1]);
       }
     }
   };
