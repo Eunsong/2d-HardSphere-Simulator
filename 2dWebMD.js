@@ -1,8 +1,8 @@
 (function() {
+
   var MdSystem = function() {
     this.atom_counts = 0;
     this.DEFAULT_BODY_SIZE = 10;
-    this.num_atoms = 1000;
     this.HASH_TABLE_SIZE = 32;
     this.ATOM_TYPES = 
     {
@@ -15,33 +15,48 @@
     this.unit = 1;
     var screen = document.getElementById("screen").getContext('2d');
     this.box = {x: screen.canvas.width, y: screen.canvas.height};
-    
-    while ( this.bodies.length < this.num_atoms){
-      var center = genRandPosition(this);
-      var vel = new Vector(0, 0);
-      //vel = genRandVelocity(0.0);
-      if ( this.atom_counts == this.num_atoms - 1){
-        vel = new Vector(1, 1);
-      }
-      var body = new Atom(this.ATOM_TYPES.THERMON, center, vel);
-      if ( !this.checkOverlap(body) ) {
-        this.addAtom( body);
-      }
-    }
+    this.wall = this.simpleWallCollision; // default wall type
 
-    // pre-print initial configuration
-    this.wallCollision();
-    this.draw(screen);
+    //region = {topleft: {x: 0, y: 0}, bottomright: {x: this.box.x, y: this.box.y}}
+    //this.addAtoms(8, 1, 'heat', 1, region, 100);
 
     var self = this;
+    var runUserCommand = function(arg){
+      self.commandParser(arg);
+    }
+
+    drawBox(screen);
+
+/*
+    document.addEventListener('keypress', function(key){
+      if ( key.charCode == 13 ){
+        alert('enter pressed');
+        var msg = document.getElementById("user-input").value;
+        runUserCommand(msg);
+        document.getElementById("user-input").value = '';
+        self.simpleWallCollision();
+        self.draw(screen);
+      }
+    });*/
+
+    document.getElementById("submit-input").addEventListener('click', function(){
+      var msg = document.getElementById("user-input").value;
+      runUserCommand(msg);
+      document.getElementById("user-input").value = '';
+      self.simpleWallCollision();
+      self.draw(screen);
+    });
+
+
     var tick = function() {
       self.updatePartition();
       self.update();
-      self.topBottomHeatBathWall(0.2, 1.5);
-      //self.wallCollision();
-      //self.heatBathWall("top", 0);
-      //self.heatBathWall("bottom", 2.5);
+
+      self.wall();
+      //self.topBottomHeatBathWall(0.2, 1.5);
+      //self.simpleWallCollision();
       //self.applyPBC();
+
       self.draw(screen);
       requestAnimationFrame(tick);
     };
@@ -53,6 +68,65 @@
   };
 
   MdSystem.prototype = {
+
+    commandParser: function(arg){
+      var tokens = arg.trim().split(",");
+      var dic = {};
+      for ( var i = 0; i < tokens.length; i++){
+        var subtokens = tokens[i].trim().split(":");
+        var key = subtokens[0].trim();
+        var value = subtokens[1].trim();
+        dic[key] = value;
+      }
+      if ( dic["add"] == "atoms" ){
+        var numAtoms = parseInt(dic["number"]);
+        var radius = 12;
+        var mass = 1;
+        var color = "red";
+        var speed = 0.0;
+        if ( dic["radius"] != null){
+          radius = parseInt(dic["radius"]);
+        }
+        if ( dic["mass"] != null ){
+          mass = parseInt(dic["mass"]);
+        }
+        if ( dic["color"] != null ){
+          color = dic["color"];
+        }
+        if ( dic["speed"] != null){
+          speed = parseFloat(dic["speed"]);
+        }
+        var region = {topleft: {x: 0, y: 0}, 
+                      bottomright: {x: this.box.x, y: this.box.y}}
+
+        this.addAtoms(radius, mass, color, speed, region, numAtoms );
+      }
+      else if ( dic["add"] == "heat bath" ){
+        var topv = parseFloat(dic["topv"]);
+        var bottomv = parseFloat(dic["bottomv"]);
+        this.wall = function(){
+          this.topBottomHeatBathWall(topv, bottomv);
+        }
+      }
+      else if ( dic["add"] == "pbc"){
+        this.wall = this.applyPBC;
+      }
+
+    },
+
+    addAtoms: function(radius_, mass_, color_, initial_speed, region, number){
+      var atomType = {radius: radius_, mass: mass_, color: color_};
+      var addedSoFar = 0;
+      while ( addedSoFar < number ){
+        var vel = genRandVelocity(initial_speed);
+        var center = genRandPosition(region);
+        var body = new Atom(atomType, center, vel);
+        if ( !this.checkOverlap(body) ) {
+          this.addAtom(body);
+          addedSoFar++;
+        }
+      }
+    },
 
     checkOverlap: function(body){
       for ( var i = 0; i < this.bodies.length; i++){
@@ -82,7 +156,9 @@
       }
     },
 
-    wallCollision: function(){
+
+
+    simpleWallCollision: function(){
       for ( var i = 0; i < this.bodies.length; i++){
         if ( this.bodies[i].center.x <= this.bodies[i].radius){
           this.bodies[i].center.x = this.bodies[i].radius;
@@ -137,9 +213,10 @@
 
     },
 
+
     draw: function(screen){
       screen.clearRect(0, 0, this.box.x, this.box.y);
-
+      drawBox(screen);
       for (var i = 0; i < this.bodies.length; i++) {
         if (this.bodies[i].draw !== undefined) {
           this.bodies[i].draw(screen);
@@ -170,17 +247,13 @@
       this.atom_counts++;
     }
 
-  }
+  };
 
   var hash = function(box_length, num_grid, position){
     dGrid = box_length/num_grid;
-    index = parseInt( position/dGrid, 10 );
+    index = Math.floor(position/dGrid);
     return index;
-  }
-
-  var configHeatDifusion = function(mdsystem){
-
-  }
+  };
 
   var Atom = function(atomtype, center, v0){
     this.atomtype = atomtype;
@@ -192,7 +265,7 @@
     this.radius = atomtype.radius;
     this.velocity = new Vector(v0.x, v0.y);
     this.index = -1; // uninitialized
-  }
+  };
   Atom.prototype = {
     setIndex: function(index){
       this.index = index;
@@ -235,13 +308,12 @@
     draw: function(screen){
         drawCircle(screen, this);
     }
-
-  }
+  };
 
   var Vector = function(x, y){
     this.x = x;
     this.y = y;
-  }
+  };
   Vector.prototype = {
     norm: function(){
       return Math.sqrt(this.x*this.x + this.y*this.y);
@@ -265,7 +337,7 @@
       denom = this.norm();
       return this.multiply(1/denom);
     }
-  }
+  };
 
   var applyPBC = function(mdsystem, body){
     if ( body.center.x >= mdsystem.box.x ){
@@ -280,16 +352,16 @@
     else if ( body.center.y < 0 ){
       body.center.y += mdsystem.box.y;
     }
-  }
+  };
 
   var isColliding = function(b1, b2){
     distance = getDistance(b1.center, b2.center);
     return ( b1 != b2 && distance < b1.radius + b2.radius + 0.1);
-  }
+  };
 
   var getDistance = function(v1, v2){
     return v1.sub(v2).norm();
-  }
+  };
 
   var getLennardJonesForce = function(mdsystem, body1, body2){
     C6 = Math.sqrt(body1.C6*body2.C6);
@@ -298,7 +370,17 @@
     R = mdsystem.getMinImage(Rorg).multiply(mdsystem.unit);
     rsq = R.normsq();
     return R.multiply( C12/Math.pow(rsq,7) - C6/Math.pow(rsq, 4) );
-  }
+  };
+
+  var drawBox = function(screen){
+    screen.beginPath();
+    screen.moveTo(0,0);
+    screen.lineTo(screen.canvas.width, 0);
+    screen.lineTo(screen.canvas.width, screen.canvas.height);
+    screen.lineTo(0, screen.canvas.height);
+    screen.lineTo(0, 0);
+    screen.stroke();
+  };
 
   var drawCircle = function(screen, body){
     screen.beginPath();
@@ -307,21 +389,38 @@
       screen.fillStyle = body.atomtype.color;
     }
     else{
+/*
       var redCode = Math.floor(body.velocity.norm()/1.0 * 255);
       if ( redCode > 255 ){
         redCode = 255;
       }
       var blueCode = 255 - redCode;
-      var redHexCode = redCode.toString(16);
-      var blueHexCode = blueCode.toString(16);
+      */
+      rgbCode = rgb(0, 3, body.velocity.norm()); //redCode.toString(16);
+      var redHexCode = rgbCode['r'].toString(16);
+      var blueHexCode = rgbCode['b'].toString(16);
+      var greenHexCode = rgbCode['g'].toString(16);
+      //var blueHexCode = blueCode.toString(16);
       if (redHexCode.length == 1 ) redHexCode = "0" + redHexCode;
       if (blueHexCode.length == 1 ) blueHexCode = "0" + blueHexCode;
-      screen.fillStyle = "#"+redHexCode + "00" + blueHexCode;
+      if (greenHexCode.length == 1 ) greenHexCode = "0" + greenHexCode;
+      screen.fillStyle = "#"+redHexCode +  greenHexCode + blueHexCode;
     }
     screen.fill();
     screen.strokeStyle = 'black';
     screen.stroke();
-  }
+  };
+
+  var rgb = function(minimum, maximum, value){
+    if ( value > maximum ){
+      maximum = value;
+    }
+    halfmax = (minimum + maximum)/2;
+    b = Math.floor( Math.max(0, 255*(1 - value/halfmax)) );
+    r = Math.floor( Math.max(0, 255*(value/halfmax - 1 )));
+    g = 255 - b - r;
+    return {'r': r, 'g':g, 'b':b};
+  };
 
   var reportCollisions = function(mdsystem) {
     var bodyPairs = [];
@@ -352,13 +451,24 @@
     }
   };
 
-  var genRandPosition = function(mdsystem){
-    return new Vector(Math.random()*mdsystem.box.x,Math.random()*mdsystem.box.y);
+  var genRandPosition = function(region){
+    /* input parameter region is a dictionary containing two keys
+        1. topleft and 2. bottomright in which both specify area to 
+        be used to generate positions */
+    var width = region.bottomright.x - region.topleft.x;
+    var height = region.bottomright.y - region.topleft.y;
+    var left = region.topleft.x;
+    var top = region.topleft.y;
+    return new Vector(Math.random()*width + left,Math.random()*height + top);
   };
 
 
-  var genRandVelocity = function(maxspeed){
-    return new Vector(-0.5 + Math.random()*maxspeed, -0.5 + Math.random()*maxspeed);
+  var genRandVelocity = function(speed){
+    var vx = Math.random();
+    var vy = Math.random();
+    var currSpeed = Math.sqrt(vx*vx + vy*vy);
+    var scale = speed/currSpeed;
+    return new Vector(scale*vx, scale*vy);
   };
 
   window.addEventListener('load', function() {
