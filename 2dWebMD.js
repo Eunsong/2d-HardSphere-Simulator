@@ -14,6 +14,9 @@
     this.partition = [];
     this.bodies = [];
     this.unit = 1;
+    this.gravity = function(){
+      // by default no gravity 
+    }
     var screen = document.getElementById("screen").getContext('2d');
     this.box = {x: screen.canvas.width, y: screen.canvas.height};
     this.wall = this.simpleWallCollision; // default wall type
@@ -52,7 +55,7 @@
     var tick = function() {
       self.updatePartition();
       self.update();
-      //self.applyGravity(0.1);
+      self.gravity();
       self.wall(self.elasticity);
       //self.topBottomHeatBathWall(0.2, 1.5);
       //self.simpleWallCollision();
@@ -182,6 +185,18 @@
       else if ( dic["add"] == "pbc"){
         this.wall = this.applyPBC;
       }
+      else if ( dic["add"] == "gravity"){
+          var acc = 0.05; // default
+          if ( dic["level"] != null ){
+            acc = parseFloat(dic["level"]);
+          }
+          this.gravity = function(){
+            this.applyGravity(acc);
+          }
+      }
+      else if ( dic["elasticity"] != null ){
+        this.elasticity = parseFloat(dic["elasticity"]);
+      }
 
     },
 
@@ -233,20 +248,20 @@
       for ( var i = 0; i < this.bodies.length; i++){
         if ( this.bodies[i].center.x <= this.bodies[i].radius){
           this.bodies[i].center.x = this.bodies[i].radius;
-          this.bodies[i].velocity.x = -this.bodies[i].velocity.x*elasticity;
+          this.bodies[i].velocity.x = Math.abs(this.bodies[i].velocity.x)*elasticity;
         }
         else if ( this.bodies[i].center.x >= this.box.x - this.bodies[i].radius ){
           this.bodies[i].center.x = this.box.x - this.bodies[i].radius;
-          this.bodies[i].velocity.x = -this.bodies[i].velocity.x*elasticity;
+          this.bodies[i].velocity.x = -Math.abs(this.bodies[i].velocity.x)*elasticity;
         }
 
         if ( this.bodies[i].center.y <= this.bodies[i].radius ){
           this.bodies[i].center.y = this.bodies[i].radius ;
-          this.bodies[i].velocity.y = -this.bodies[i].velocity.y*elasticity;
+          this.bodies[i].velocity.y = Math.abs(this.bodies[i].velocity.y)*elasticity;
         }
         else if ( this.bodies[i].center.y >= this.box.y - this.bodies[i].radius ){
           this.bodies[i].center.y = this.box.y - this.bodies[i].radius;
-          this.bodies[i].velocity.y = -this.bodies[i].velocity.y*elasticity;
+          this.bodies[i].velocity.y = -Math.abs(this.bodies[i].velocity.y)*elasticity;
         }
       }
     },
@@ -255,16 +270,16 @@
       for ( var i = 0; i < this.bodies.length; i++){
         if ( this.bodies[i].center.x <= this.bodies[i].radius){
           this.bodies[i].center.x = this.bodies[i].radius;
-          this.bodies[i].velocity.x = -this.bodies[i].velocity.x*elasticity;
+          this.bodies[i].velocity.x = Math.abs(this.bodies[i].velocity.x)*elasticity;
         }
         else if ( this.bodies[i].center.x >= this.box.x - this.bodies[i].radius ){
           this.bodies[i].center.x = this.box.x - this.bodies[i].radius;
-          this.bodies[i].velocity.x = -this.bodies[i].velocity.x*elasticity;
+          this.bodies[i].velocity.x = -Math.abs(this.bodies[i].velocity.x)*elasticity;
         }
 
         if ( this.bodies[i].center.y <= this.bodies[i].radius ){
           this.bodies[i].center.y = this.bodies[i].radius ;
-          this.bodies[i].velocity.y = -this.bodies[i].velocity.y;
+          this.bodies[i].velocity.y = Math.abs(this.bodies[i].velocity.y);
           var speed = this.bodies[i].velocity.norm();
           if ( speed != 0 ){
             var scaleFactor = top_vel/speed;
@@ -273,7 +288,7 @@
         }
         else if ( this.bodies[i].center.y >= this.box.y - this.bodies[i].radius ){
           this.bodies[i].center.y = this.box.y - this.bodies[i].radius;
-          this.bodies[i].velocity.y = -this.bodies[i].velocity.y;
+          this.bodies[i].velocity.y = -Math.abs(this.bodies[i].velocity.y);
           var speed = this.bodies[i].velocity.norm();
           if ( speed != 0 ){
             var scaleFactor = bottom_vel/speed;
@@ -354,11 +369,6 @@
 
     collision: function(elasticity, body){
       var Rij = this.center.sub(body.center);
-      var distance = Rij.norm();
-      var minDistance = (this.radius + body.radius);
-      if ( distance <  minDistance) {
-        this.center = body.center.add( Rij.multiply( minDistance/distance ));
-      }
 
       var mi = this.mass;
       var mj = body.mass;
@@ -379,6 +389,18 @@
       var vj_new = tan.multiply(vj_tan).sub( uij.multiply(vj_delta));
       body.velocity = vj_new;
       this.velocity = vi_new;
+
+      var distance = Rij.norm();
+      var minDistance = (this.radius + body.radius);
+      if ( distance <  minDistance) {
+        this.center = body.center.add( Rij.multiply( minDistance/distance ));
+        if ( elasticity < 1.0 ){
+          this.velocity = this.velocity.add( uij.multiply( 0.04*(minDistance - distance)));
+          body.velocity = body.velocity.sub( uij.multiply( 0.04*(minDistance - distance)));
+        }
+      }
+
+
     },
 
     draw: function(screen){
@@ -472,7 +494,7 @@
       }
       var blueCode = 255 - redCode;
       */
-      rgbCode = rgb(0, 2, body.velocity.norm()); //redCode.toString(16);
+      rgbCode = rgb(0, 1.2, body.velocity.norm()); //redCode.toString(16);
       var redHexCode = rgbCode['r'].toString(16);
       var blueHexCode = rgbCode['b'].toString(16);
       var greenHexCode = rgbCode['g'].toString(16);
