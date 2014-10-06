@@ -40,13 +40,21 @@
       }
     });*/
 
-    document.getElementById("only_form").addEventListener('submit', function(event){
+    document.getElementById("only_form").addEventListener('submit', function(evt){
       var msg = document.getElementById("user-input").value;
       runUserCommand(msg);
       document.getElementById("user-input").value = '';
       self.simpleWallCollision(self.elasticity);
       self.draw(screen);
-      event.preventDefault();
+      evt.preventDefault();
+    });
+
+    document.getElementById("select-example").addEventListener('change', function(evt){
+      var msg = evt.srcElement.value;
+      document.getElementById("user-input").value = msg;
+
+      // Go back to selecting the first element
+      evt.srcElement.selectedIndex = 0;
     });
 
 
