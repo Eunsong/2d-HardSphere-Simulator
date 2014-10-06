@@ -6,9 +6,13 @@
   <body>
     <h1>2D Web MD Simulation </h1>
     <button id="button" style="width:80px; height:40px ; margin-top: 30px; margin-bottom:30px; left: 30px; position: absolute; top: 0px; left: 550px"> Run </button>
-    <FORM NAME="user input">
+    <FORM NAME="user input" id="only_form">
       <P> Command : <INPUT id="user-input" TYPE="TEXT" NAME="command" style="width:450px"><BR><BR>
-        <INPUT id="submit-input" TYPE="Button" Value="submit"></P></FORM>
+        <INPUT id="submit-input" TYPE="submit" Value="Execute!"></P></FORM>
+        <select>
+          <option value="example">Select Example</option>
+          <option value="add:atoms, number:4">Add 4 Atoms</option>
+        </select>
     <div>
         <canvas id="screen" width="640" height="640"></canvas>
     </div>

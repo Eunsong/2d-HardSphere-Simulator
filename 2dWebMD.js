@@ -40,12 +40,13 @@
       }
     });*/
 
-    document.getElementById("submit-input").addEventListener('click', function(){
+    document.getElementById("only_form").addEventListener('submit', function(event){
       var msg = document.getElementById("user-input").value;
       runUserCommand(msg);
       document.getElementById("user-input").value = '';
       self.simpleWallCollision(self.elasticity);
       self.draw(screen);
+      event.preventDefault();
     });
 
 
