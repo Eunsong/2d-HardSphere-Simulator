@@ -21,9 +21,6 @@
     this.box = {x: screen.canvas.width, y: screen.canvas.height};
     this.wall = this.simpleWallCollision; // default wall type
 
-    //region = {topleft: {x: 0, y: 0}, bottomright: {x: this.box.x, y: this.box.y}}
-    //this.addAtoms(8, 1, 'heat', 1, region, 100);
-
     var self = this;
     var runUserCommand = function(arg){
       self.commandParser(arg);
