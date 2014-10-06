@@ -23,7 +23,10 @@
 
     var self = this;
     var runUserCommand = function(arg){
-      self.commandParser(arg);
+      splitted_args = splitByNewLine(arg);
+      for ( var i = 0; i < splitted_args.length; i++){
+        self.commandParser(splitted_args[i]);
+      }
     }
 
     drawBox(screen);
