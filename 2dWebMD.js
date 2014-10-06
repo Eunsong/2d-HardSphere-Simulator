@@ -576,7 +576,36 @@
     return new Vector(scale*vx, scale*vy);
   };
 
+  var splitByNewLine = function (text) {
+    return text.match(/[^\r\n]+/g);
+  };
+
+  var removeEmptyLinesAndTabs = function(text) {
+    lines = splitByNewLine(text);
+    // Trim every line
+    var trim = function (el) {
+      return el.trim();
+    };
+    var notEmpty = function (el) {
+      return el.length > 0;
+    };
+
+    lines = lines.map(trim).filter(notEmpty);
+    
+    return lines.join('\n');
+  };
+
+  var cleanUpDropdown = function() {
+    console.log('clean up');
+    var dropdown = document.getElementById("select-example");
+    for (var i = 0; i < dropdown.length; i++){
+      var betterVal = removeEmptyLinesAndTabs(dropdown.options[i].value);
+      dropdown.options[i].value = betterVal;
+    };
+  };
+
   window.addEventListener('load', function() {
     new MdSystem();
+    cleanUpDropdown();
   });
 })();
