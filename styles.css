@@ -1,0 +1,15 @@
+.buttons {
+	float:left;
+}
+
+#button {
+	display:block;
+}
+
+#screen-wrapper {
+    clear:both;
+}
+
+#user-input {
+    float:left;
+}

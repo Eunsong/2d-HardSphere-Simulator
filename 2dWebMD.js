@@ -74,8 +74,9 @@
       requestAnimationFrame(tick);
     };
 
-    document.getElementById("button").addEventListener('click', function() {
+    document.getElementById("button").addEventListener('click', function(evt) {
       tick();
+      evt.preventDefault();
     });
     
   };
@@ -599,7 +600,6 @@
   };
 
   var cleanUpDropdown = function() {
-    console.log('clean up');
     var dropdown = document.getElementById("select-example");
     for (var i = 0; i < dropdown.length; i++){
       var betterVal = removeEmptyLinesAndTabs(dropdown.options[i].value);
