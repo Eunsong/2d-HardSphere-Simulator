@@ -3,7 +3,7 @@
   var MdSystem = function() {
     this.atom_counts = 0;
     this.elasticity = 1.0;
-    this.resistance = 0.0;
+    this.friction = 0.0;
     this.DEFAULT_BODY_SIZE = 10;
     this.HASH_TABLE_SIZE = 32;
     this.ATOM_TYPES = 
@@ -193,8 +193,8 @@
       else if ( dic["elasticity"] != null ){
         this.elasticity = parseFloat(dic["elasticity"]);
       }
-      else if ( dic["resistance"] != null ){
-        this.resistance = parseFloat(dic["resistance"]);
+      else if ( dic["friction"] != null ){
+        this.friction = parseFloat(dic["friction"]);
       }
     },
 
@@ -229,7 +229,7 @@
 
     update: function(){
       for ( var i = 0; i < this.bodies.length; i++){
-        this.bodies[i].update(this.resistance);
+        this.bodies[i].update(this.friction);
       }
       reportCollisions(this);
     },
@@ -360,11 +360,11 @@
       this.index = index;
     },
 
-    update: function(resistance){
+    update: function(friction){
       this.center.x += this.velocity.x;
       this.center.y += this.velocity.y;
-      this.velocity.x = (1 - resistance)*this.velocity.x;
-      this.velocity.y = (1 - resistance)*this.velocity.y;
+      this.velocity.x = (1 - friction)*this.velocity.x;
+      this.velocity.y = (1 - friction)*this.velocity.y;
     },
 
     collision: function(elasticity, body){
@@ -454,7 +454,7 @@
 
   var isColliding = function(b1, b2){
     distance = getDistance(b1.center, b2.center);
-    return ( b1 != b2 && distance < b1.radius + b2.radius + 0.1);
+    return ( b1 != b2 && distance < b1.radius + b2.radius + 1.1);
   };
 
   var getDistance = function(v1, v2){
