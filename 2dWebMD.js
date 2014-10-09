@@ -3,6 +3,7 @@
   var MdSystem = function() {
     this.atom_counts = 0;
     this.elasticity = 1.0;
+    this.resistance = 0.0;
     this.DEFAULT_BODY_SIZE = 10;
     this.HASH_TABLE_SIZE = 32;
     this.ATOM_TYPES = 
@@ -207,7 +208,9 @@
       else if ( dic["elasticity"] != null ){
         this.elasticity = parseFloat(dic["elasticity"]);
       }
-
+      else if ( dic["resistance"] != null ){
+        this.resistance = parseFloat(dic["resistance"]);
+      }
     },
 
     addAtoms: function(radius_, mass_, color_, initial_speed, region, number){
@@ -241,7 +244,7 @@
 
     update: function(){
       for ( var i = 0; i < this.bodies.length; i++){
-        this.bodies[i].update();
+        this.bodies[i].update(this.resistance);
       }
       reportCollisions(this);
     },
@@ -372,9 +375,11 @@
       this.index = index;
     },
 
-    update: function(){
+    update: function(resistance){
       this.center.x += this.velocity.x;
       this.center.y += this.velocity.y;
+      this.velocity.x = (1 - resistance)*this.velocity.x;
+      this.velocity.y = (1 - resistance)*this.velocity.y;
     },
 
     collision: function(elasticity, body){

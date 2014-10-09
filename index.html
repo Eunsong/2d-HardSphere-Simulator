@@ -5,17 +5,37 @@
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
-    <h1>2D Web MD Simulation </h1>
+    <h3>2D Web (hard sphere) MD Simulation </h3>
 
     <select id="select-example">
       <option value="example">Select Example</option>
-      <option value="add:atoms, number:200, radius:8, color:heat, speed:2, mass:1">Add 500 Thermons</option>
-      <option value="add:atom, x:300, y:300, vx:3, vy:0, radius:8, color:heat">Add a thermon</option>
+	  <option value="
+		add:atom, radius:14, mass:1, color:red, x:30, y:300, vx:2
+		add:atom, radius:14, mass:1, color:white, x:600, y:300, vx:-2
+		"> Two particle collision</option>
       <option value="
-        add: atoms, number:500, radius:8, color:heat, speed:0
-        add: atom, vx: 3, vy: 3, radius:8, color:heat
-        add: heat bath, topv: 0.3, bottomv:3
+		add:atoms, number:50, radius:15, color:red, speed:0, mass:1
+		">Add 50 particles at rest</option>
+      <option value="
+        add: atom, radius:6, color:heat, vx:10, x:30, y:30
+        add: atoms, number:1600, radius:6, color:heat, speed:0
+        add: heat bath, topv: 0.3, bottomv:2.2
         ">Heat Diffusion</option>
+	  <option value="
+		add: atom, radius:15, color: white, x:296, y:650, vy: -15, vx: 0.3
+		add: atom, radius:15, color: yellow, x:250, y:100
+		add: atom, radius:15, color: green, x:281, y:100
+		add: atom, radius:15, color: purple, x:312, y:100
+		add: atom, radius:15, color: black, x:343, y:100
+		add: atom, radius:15, color: orange, x:265, y:127
+		add: atom, radius:15, color: red, x:296, y:127
+		add: atom, radius:15, color: blue, x:327, y:127
+		add: atom, radius:15, color: brown, x:281, y:154
+		add: atom, radius:15, color: pink, x:312, y:154
+		add: atom, radius:15, color: cyan, x:296, y:181
+		elasticity:0.95
+		resistance:0.004
+		">Billiards balls</option>
     </select>
 
     <FORM NAME="user input" id="only_form">
