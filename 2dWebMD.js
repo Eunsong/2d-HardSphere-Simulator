@@ -32,18 +32,6 @@
 
     drawBox(screen);
 
-/*
-    document.addEventListener('keypress', function(key){
-      if ( key.charCode == 13 ){
-        alert('enter pressed');
-        var msg = document.getElementById("user-input").value;
-        runUserCommand(msg);
-        document.getElementById("user-input").value = '';
-        self.simpleWallCollision();
-        self.draw(screen);
-      }
-    });*/
-
     document.getElementById("only_form").addEventListener('submit', function(evt){
       var msg = document.getElementById("user-input").value;
       runUserCommand(msg);
@@ -67,9 +55,6 @@
       self.update();
       self.gravity();
       self.wall(self.elasticity);
-      //self.topBottomHeatBathWall(0.2, 1.5);
-      //self.simpleWallCollision();
-      //self.applyPBC();
 
       self.draw(screen);
       requestAnimationFrame(tick);
