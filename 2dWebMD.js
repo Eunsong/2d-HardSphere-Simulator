@@ -12,7 +12,7 @@
     this.gravity = function(){
       // by default no gravity 
     }
-    
+
     var screen = document.getElementById("screen").getContext('2d');
     this.box = {x: screen.canvas.width, y: screen.canvas.height};
     this.wall = this.simpleWallCollision; // default wall type
@@ -83,34 +83,34 @@
         var region = {topleft: {x: 0, y: 0}, 
                       bottomright: {x: this.box.x, y: this.box.y}}
         var center = genRandPosition(region);
-        if ( dic["radius"] != null){
+        if ( dic["radius"] !== undefined){
           radius_ = parseInt(dic["radius"]);
         }
-        if ( dic["mass"] != null ){
+        if ( dic["mass"] !== undefined ){
           mass_ = parseInt(dic["mass"]);
         }
-        if ( dic["color"] != null ){
+        if ( dic["color"] !== undefined ){
           color_ = dic["color"];
         }
-        if ( dic["speed"] != null){
+        if ( dic["speed"] !== undefined){
           speed = parseFloat(dic["speed"]);
         }
-        if ( dic["vx"] != null){
+        if ( dic["vx"] !== undefined){
           vx = parseFloat(dic["vx"]);
         }
-        if ( dic["vy"] != null){
+        if ( dic["vy"] !== undefined){
           vy = parseFloat(dic["vy"]);
         }
-        if ( vx != 0 || vy != 0 ){
+        if ( vx !== 0 || vy !== 0 ){
           vel = new Vector(vx, vy);
         }
         else{
           vel = genRandVelocity(speed);
         }
-        if ( dic["x"] != null){
+        if ( dic["x"] !== undefined){
           center.x = parseInt(dic["x"]);
         }
-        if ( dic["y"] != null){
+        if ( dic["y"] !== undefined){
           center.y = parseInt(dic["y"]);
         }
         var atomType = {radius: radius_, mass: mass_, color: color_};
@@ -131,21 +131,21 @@
         var mass = 1;
         var color = "red";
         var speed = 0.0;
-        if ( dic["radius"] != null){
+        if ( dic["radius"] !== undefined){
           radius = parseInt(dic["radius"]);
         }
-        if ( dic["mass"] != null ){
+        if ( dic["mass"] !== undefined ){
           mass = parseInt(dic["mass"]);
         }
-        if ( dic["color"] != null ){
+        if ( dic["color"] !== undefined ){
           color = dic["color"];
         }
-        if ( dic["speed"] != null){
+        if ( dic["speed"] !== undefined){
           speed = parseFloat(dic["speed"]);
         }
         var region = {topleft: {x: 0, y: 0}, 
                       bottomright: {x: this.box.x, y: this.box.y}}
-        if ( dic["region"] != null){
+        if ( dic["region"] !== undefined){
           if (dic["region"] == "upper half"){
             region = {topleft: {x: 0, y: 0}, 
                       bottomright: {x: this.box.x, y: this.box.y/2}}
@@ -177,17 +177,17 @@
       }
       else if ( dic["add"] == "gravity"){
           var acc = 0.05; // default
-          if ( dic["level"] != null ){
+          if ( dic["level"] !== undefined ){
             acc = parseFloat(dic["level"]);
           }
           this.gravity = function(){
             this.applyGravity(acc);
           }
       }
-      else if ( dic["elasticity"] != null ){
+      else if ( dic["elasticity"] !== undefined ){
         this.elasticity = parseFloat(dic["elasticity"]);
       }
-      else if ( dic["friction"] != null ){
+      else if ( dic["friction"] !== undefined ){
         this.friction = parseFloat(dic["friction"]);
       }
     },
